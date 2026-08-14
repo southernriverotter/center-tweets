@@ -17,19 +17,7 @@
   #output{ background:#ffffff; color:#000000; }
   .copy-btn{ position:absolute; top:9px; right:9px; font-family:sans-serif; font-size:11px; padding:6px 12px; background:#000000; color:#ffffff; border:none; cursor:pointer; }
   .copy-btn.copied{ background:#555555; }
-
-  .preset-row{ display:flex; gap:8px; margin-top:12px; }
-  .preset-btn{
-    flex:1;
-    font-family:sans-serif;
-    font-size:13px;
-    padding:8px;
-    background:#ffffff;
-    border:1px solid #000000;
-    color:#000000;
-    cursor:pointer;
-  }
-  .preset-btn.active{ background:#000000; color:#ffffff; }
+  .mode-label{ display:inline-block; font-size:12px; padding:6px 10px; border:1px solid #000000; background:#000000; color:#ffffff; margin-top:12px; }
 
   .nudge-row{ display:flex; align-items:center; gap:10px; margin-top:12px; }
   .nudge-row span{ font-size:12px; color:#000000; white-space:nowrap; }
@@ -52,10 +40,7 @@
       <textarea id="output" readonly></textarea>
       <button class="copy-btn" id="copyBtn" onclick="copyOutput()">Copy</button>
     </div>
-    <div class="preset-row">
-      <button class="preset-btn active" id="presetMobile" onclick="setPreset('mobile')">Mobile</button>
-      <button class="preset-btn" id="presetDesktop" onclick="setPreset('desktop')">Desktop</button>
-    </div>
+    <div class="mode-label">Mobile</div>
     <div class="nudge-row">
       <span>← left</span>
       <input type="range" id="nudge" min="-150" max="150" value="0">
@@ -69,8 +54,7 @@
 const PAD_CHAR = '\u2800';
 const FONT = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
-const PRESETS = { mobile: 300, desktop: 480 };
-let currentPreset = 'mobile';
+const BASE_TARGET = 300;
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -96,14 +80,6 @@ function wrapLine(line, maxWidth){
   return result;
 }
 
-function setPreset(name){
-  currentPreset = name;
-  document.getElementById('presetMobile').classList.toggle('active', name === 'mobile');
-  document.getElementById('presetDesktop').classList.toggle('active', name === 'desktop');
-  document.getElementById('nudge').value = 0;
-  centerIt();
-}
-
 function centerIt(){
   const raw = document.getElementById('input').value.replace(/\r\n/g, '\n');
   const rawLines = raw.split('\n');
@@ -116,8 +92,7 @@ function centerIt(){
   const nudge = +document.getElementById('nudge').value;
   document.getElementById('nudgeVal').textContent = nudge;
 
-  const baseTarget = PRESETS[currentPreset];
-  const target = Math.max(baseTarget + nudge * 2, 60);
+  const target = Math.max(BASE_TARGET + nudge * 2, 60);
 
   const wrapped = [];
   for(const line of rawLines){
