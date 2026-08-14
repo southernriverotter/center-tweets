@@ -37,6 +37,16 @@
   #nudgeVal{ font-size:12px; color:#000000; width:38px; text-align:right; }
   .footer{ text-align:center; font-size:12px; margin-top:34px; }
   .footer a{ color:#000000; text-decoration:none; border-bottom:1px solid #000000; }
+  .preview-box{
+    border:1px solid #000000;
+    padding:14px;
+    margin-top:12px;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    font-size:16px;
+    line-height:1.4;
+  }
+  .preview-label{ font-size:11px; margin-top:20px; margin-bottom:6px; }
 </style>
 </head>
 <body>
@@ -62,6 +72,8 @@
       <span>right →</span>
       <span id="nudgeVal">0</span>
     </div>
+    <div class="preview-label">Preview at this width</div>
+    <div class="preview-box" id="previewBox"></div>
   </section>
   <div class="footer">made by <a href="https://x.com/alloysavvy" target="_blank">@alloysavvy</a></div>
 </div>
@@ -78,29 +90,58 @@ ctx.font = FONT;
 
 function textWidthPx(str){ return ctx.measureText(str).width; }
 
+function wrapLine(line, maxWidth){
+  if(textWidthPx(line) <= maxWidth) return [line];
+  const words = line.split(' ');
+  const result = [];
+  let current = '';
+  for(const word of words){
+    const test = current ? current + ' ' + word : word;
+    if(textWidthPx(test) <= maxWidth || !current){
+      current = test;
+    } else {
+      result.push(current);
+      current = word;
+    }
+  }
+  if(current) result.push(current);
+  return result;
+}
+
 function setPreset(name){
   currentPreset = name;
   document.getElementById('presetMobile').classList.toggle('active', name === 'mobile');
   document.getElementById('presetDesktop').classList.toggle('active', name === 'desktop');
   document.getElementById('nudge').value = 0;
+  document.getElementById('previewBox').style.width = PRESETS[name] + 'px';
+  document.getElementById('previewBox').style.maxWidth = '100%';
   centerIt();
 }
 
 function centerIt(){
-  const raw = document.getElementById('input').value;
-  const lines = raw.split('\n');
-  const nonEmpty = lines.filter(l => l.trim().length > 0);
-  if(nonEmpty.length === 0){ document.getElementById('output').value = ''; return; }
+  const raw = document.getElementById('input').value.replace(/\r\n/g, '\n');
+  const rawLines = raw.split('\n');
+  const nonEmpty = rawLines.filter(l => l.trim().length > 0);
+  if(nonEmpty.length === 0){
+    document.getElementById('output').value = '';
+    document.getElementById('previewBox').textContent = '';
+    return;
+  }
 
   const nudge = +document.getElementById('nudge').value;
   document.getElementById('nudgeVal').textContent = nudge;
 
-  const padCharWidth = textWidthPx(PAD_CHAR) || 8;
-  const maxLineWidth = Math.max(...nonEmpty.map(textWidthPx));
   const baseTarget = PRESETS[currentPreset];
-  const target = Math.max(maxLineWidth, baseTarget + nudge * 2);
+  const target = Math.max(baseTarget + nudge * 2, 60);
 
-  const padded = lines.map(line => {
+  const wrapped = [];
+  for(const line of rawLines){
+    if(line.trim().length === 0){ wrapped.push(line); continue; }
+    wrapped.push(...wrapLine(line, target));
+  }
+
+  const padCharWidth = textWidthPx(PAD_CHAR) || 8;
+  const padded = wrapped.map(line => {
     if(line.trim().length === 0) return line;
     const diff = target - textWidthPx(line);
     const padCount = Math.max(0, Math.round(diff / 2 / padCharWidth));
@@ -108,7 +149,10 @@ function centerIt(){
   });
 
   const finalLines = [PAD_CHAR, '', ...padded, '', PAD_CHAR];
-  document.getElementById('output').value = finalLines.join('\n');
+  const output = finalLines.join('\n');
+  document.getElementById('output').value = output;
+  document.getElementById('previewBox').style.fontFamily = FONT;
+  document.getElementById('previewBox').textContent = output;
 }
 
 function copyOutput(){
@@ -120,8 +164,40 @@ function copyOutput(){
     navigator.clipboard.writeText(ta.value).then(done).catch(() => { ta.select(); document.execCommand('copy'); done(); });
   } else { ta.select(); document.execCommand('copy'); done(); }
 }
-document.getElementById('input').addEventListener('input', centerIt);
+const LINE_CHAR_LIMIT = 30;
+
+function enforceLineLimit(){
+  const ta = document.getElementById('input');
+  const text = ta.value;
+  const cursor = ta.selectionStart;
+
+  const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+  let lineEnd = text.indexOf('\n', cursor);
+  if(lineEnd === -1) lineEnd = text.length;
+  const currentLine = text.slice(lineStart, lineEnd);
+
+  if(currentLine.length <= LINE_CHAR_LIMIT) return;
+
+  let breakAt = currentLine.lastIndexOf(' ', LINE_CHAR_LIMIT);
+  if(breakAt <= 0) breakAt = LINE_CHAR_LIMIT;
+
+  const before = currentLine.slice(0, breakAt).trimEnd();
+  const after = currentLine.slice(breakAt).trimStart();
+
+  const cursorWasAtEnd = cursor >= lineEnd;
+
+  ta.value = text.slice(0, lineStart) + before + '\n' + after + text.slice(lineEnd);
+
+  const newCursor = cursorWasAtEnd
+    ? lineStart + before.length + 1 + after.length
+    : lineStart + Math.min(cursor - lineStart, before.length);
+  ta.selectionStart = ta.selectionEnd = newCursor;
+}
+
+document.getElementById('input').addEventListener('input', () => { enforceLineLimit(); centerIt(); });
 document.getElementById('nudge').addEventListener('input', centerIt);
+document.getElementById('previewBox').style.width = PRESETS.mobile + 'px';
+document.getElementById('previewBox').style.maxWidth = '100%';
 </script>
 </body>
 </html>
