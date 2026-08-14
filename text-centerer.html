@@ -35,6 +35,8 @@
   .nudge-row span{ font-size:12px; color:#000000; white-space:nowrap; }
   .nudge-row input[type=range]{ flex:1; accent-color:#000000; }
   #nudgeVal{ font-size:12px; color:#000000; width:38px; text-align:right; }
+  .footer{ text-align:center; font-size:12px; margin-top:34px; }
+  .footer a{ color:#000000; text-decoration:none; border-bottom:1px solid #000000; }
 </style>
 </head>
 <body>
@@ -55,12 +57,13 @@
       <button class="preset-btn" id="presetDesktop" onclick="setPreset('desktop')">Desktop</button>
     </div>
     <div class="nudge-row">
-      <span>◀ left</span>
+      <span>← left</span>
       <input type="range" id="nudge" min="-150" max="150" value="0">
-      <span>right ▶</span>
+      <span>right →</span>
       <span id="nudgeVal">0</span>
     </div>
   </section>
+  <div class="footer">made by <a href="https://x.com/alloysavvy" target="_blank">@alloysavvy</a></div>
 </div>
 <script>
 const PAD_CHAR = '\u2800';
@@ -79,6 +82,7 @@ function setPreset(name){
   currentPreset = name;
   document.getElementById('presetMobile').classList.toggle('active', name === 'mobile');
   document.getElementById('presetDesktop').classList.toggle('active', name === 'desktop');
+  document.getElementById('nudge').value = 0;
   centerIt();
 }
 
