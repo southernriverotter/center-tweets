@@ -31,12 +31,9 @@
     transition:opacity 0.15s;
   }
   .copied-overlay.show{ opacity:1; }
-  .mode-label{ display:inline-block; font-size:12px; padding:6px 10px; border:1px solid #000000; background:#000000; color:#ffffff; margin-top:12px; }
-
-  .nudge-row{ display:flex; align-items:center; gap:10px; margin-top:12px; }
-  .nudge-row span{ font-size:12px; color:#000000; white-space:nowrap; }
-  .nudge-row input[type=range]{ flex:1; accent-color:#000000; }
-  #nudgeVal{ font-size:12px; color:#000000; width:38px; text-align:right; }
+  .mode-btn{ display:inline-block; font-family:sans-serif; font-size:12px; padding:8px 14px; border:1px solid #000000; background:#000000; color:#ffffff; margin-top:12px; cursor:pointer; }
+  .mode-btn:hover{ background:#333333; }
+  .mode-btn:active{ background:#555555; }
   .footer{ text-align:center; font-size:12px; margin-top:34px; }
   .footer a{ color:#000000; text-decoration:none; border-bottom:1px solid #000000; }
 </style>
@@ -55,13 +52,7 @@
       <button class="copy-btn" id="copyBtn" onclick="copyOutput()">Copy</button>
       <div class="copied-overlay" id="copiedOverlay">Copied!</div>
     </div>
-    <div class="mode-label">Mobile</div>
-    <div class="nudge-row">
-      <span>← left</span>
-      <input type="range" id="nudge" min="-150" max="150" value="0">
-      <span>right →</span>
-      <span id="nudgeVal">0</span>
-    </div>
+    <button class="mode-btn" id="modeBtn" onclick="resetAll()">Mobile Standard</button>
   </section>
   <div class="footer">made by <a href="https://x.com/alloysavvy" target="_blank">@alloysavvy</a></div>
 </div>
@@ -104,10 +95,7 @@ function centerIt(){
     return;
   }
 
-  const nudge = +document.getElementById('nudge').value;
-  document.getElementById('nudgeVal').textContent = nudge;
-
-  const target = Math.max(BASE_TARGET + nudge * 2, 60);
+  const target = Math.max(BASE_TARGET, 60);
 
   const wrapped = [];
   for(const line of rawLines){
@@ -175,8 +163,12 @@ function enforceLineLimit(){
   ta.selectionStart = ta.selectionEnd = newCursor;
 }
 
+function resetAll(){
+  document.getElementById('input').value = '';
+  document.getElementById('output').value = '';
+}
+
 document.getElementById('input').addEventListener('input', () => { enforceLineLimit(); centerIt(); });
-document.getElementById('nudge').addEventListener('input', centerIt);
 </script>
 </body>
 </html>
