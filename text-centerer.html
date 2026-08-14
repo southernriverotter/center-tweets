@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Centerer</title>
+<style>
+  *{box-sizing:border-box;}
+  body{ margin:0; background:#ffffff; color:#000000; font-family:sans-serif; padding:36px 16px 60px; }
+  .wrap{ max-width:520px; margin:0 auto; }
+  h1{ font-size:24px; font-weight:700; margin:0 0 28px; text-align:center; }
+  label{ display:block; font-size:13px; margin-bottom:8px; }
+  textarea{ width:100%; min-height:130px; font-family:sans-serif; font-size:14px; line-height:1.6; padding:12px; border:1px solid #000000; background:#ffffff; color:#000000; resize:vertical; }
+  textarea:focus{ outline:2px solid #000000; outline-offset:1px; }
+  section{ margin-bottom:22px; }
+  .output-wrap{ position:relative; }
+  #output{ background:#ffffff; color:#000000; }
+  .copy-btn{ position:absolute; top:9px; right:9px; font-family:sans-serif; font-size:11px; padding:6px 12px; background:#000000; color:#ffffff; border:none; cursor:pointer; }
+  .copy-btn.copied{ background:#555555; }
+
+  .preset-row{ display:flex; gap:8px; margin-top:12px; }
+  .preset-btn{
+    flex:1;
+    font-family:sans-serif;
+    font-size:13px;
+    padding:8px;
+    background:#ffffff;
+    border:1px solid #000000;
+    color:#000000;
+    cursor:pointer;
+  }
+  .preset-btn.active{ background:#000000; color:#ffffff; }
+
+  .nudge-row{ display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .nudge-row span{ font-size:12px; color:#000000; white-space:nowrap; }
+  .nudge-row input[type=range]{ flex:1; accent-color:#000000; }
+  #nudgeVal{ font-size:12px; color:#000000; width:38px; text-align:right; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Text Centerer</h1>
+  <section>
+    <label for="input">Input</label>
+    <textarea id="input" placeholder="type your tweet here to center it"></textarea>
+  </section>
+  <section>
+    <label for="output">Output</label>
+    <div class="output-wrap">
+      <textarea id="output" readonly></textarea>
+      <button class="copy-btn" id="copyBtn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="preset-row">
+      <button class="preset-btn active" id="presetMobile" onclick="setPreset('mobile')">Mobile</button>
+      <button class="preset-btn" id="presetDesktop" onclick="setPreset('desktop')">Desktop</button>
+    </div>
+    <div class="nudge-row">
+      <span>◀ left</span>
+      <input type="range" id="nudge" min="-150" max="150" value="0">
+      <span>right ▶</span>
+      <span id="nudgeVal">0</span>
+    </div>
+  </section>
+</div>
+<script>
+const PAD_CHAR = '\u2800';
+const FONT = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+const PRESETS = { mobile: 300, desktop: 480 };
+let currentPreset = 'mobile';
+
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+ctx.font = FONT;
+
+function textWidthPx(str){ return ctx.measureText(str).width; }
+
+function setPreset(name){
+  currentPreset = name;
+  document.getElementById('presetMobile').classList.toggle('active', name === 'mobile');
+  document.getElementById('presetDesktop').classList.toggle('active', name === 'desktop');
+  centerIt();
+}
+
+function centerIt(){
+  const raw = document.getElementById('input').value;
+  const lines = raw.split('\n');
+  const nonEmpty = lines.filter(l => l.trim().length > 0);
+  if(nonEmpty.length === 0){ document.getElementById('output').value = ''; return; }
+
+  const nudge = +document.getElementById('nudge').value;
+  document.getElementById('nudgeVal').textContent = nudge;
+
+  const padCharWidth = textWidthPx(PAD_CHAR) || 8;
+  const maxLineWidth = Math.max(...nonEmpty.map(textWidthPx));
+  const baseTarget = PRESETS[currentPreset];
+  const target = Math.max(maxLineWidth, baseTarget + nudge * 2);
+
+  const padded = lines.map(line => {
+    if(line.trim().length === 0) return line;
+    const diff = target - textWidthPx(line);
+    const padCount = Math.max(0, Math.round(diff / 2 / padCharWidth));
+    return PAD_CHAR.repeat(padCount) + line;
+  });
+
+  const finalLines = [PAD_CHAR, '', ...padded, '', PAD_CHAR];
+  document.getElementById('output').value = finalLines.join('\n');
+}
+
+function copyOutput(){
+  const ta = document.getElementById('output');
+  if(!ta.value) return;
+  const btn = document.getElementById('copyBtn');
+  const done = () => { btn.textContent = 'Copied!'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1300); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(done).catch(() => { ta.select(); document.execCommand('copy'); done(); });
+  } else { ta.select(); document.execCommand('copy'); done(); }
+}
+document.getElementById('input').addEventListener('input', centerIt);
+document.getElementById('nudge').addEventListener('input', centerIt);
+</script>
+</body>
+</html>
