@@ -17,6 +17,20 @@
   #output{ background:#ffffff; color:#000000; }
   .copy-btn{ position:absolute; top:9px; right:9px; font-family:sans-serif; font-size:11px; padding:6px 12px; background:#000000; color:#ffffff; border:none; cursor:pointer; }
   .copy-btn.copied{ background:#555555; }
+  .copied-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.92);
+    font-size:16px;
+    font-weight:700;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 0.15s;
+  }
+  .copied-overlay.show{ opacity:1; }
   .mode-label{ display:inline-block; font-size:12px; padding:6px 10px; border:1px solid #000000; background:#000000; color:#ffffff; margin-top:12px; }
 
   .nudge-row{ display:flex; align-items:center; gap:10px; margin-top:12px; }
@@ -37,8 +51,9 @@
   <section>
     <label for="output">Output</label>
     <div class="output-wrap">
-      <textarea id="output" readonly></textarea>
+      <textarea id="output" readonly onclick="copyOutput()"></textarea>
       <button class="copy-btn" id="copyBtn" onclick="copyOutput()">Copy</button>
+      <div class="copied-overlay" id="copiedOverlay">Copied!</div>
     </div>
     <div class="mode-label">Mobile</div>
     <div class="nudge-row">
@@ -117,7 +132,15 @@ function copyOutput(){
   const ta = document.getElementById('output');
   if(!ta.value) return;
   const btn = document.getElementById('copyBtn');
-  const done = () => { btn.textContent = 'Copied!'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1300); };
+  const overlay = document.getElementById('copiedOverlay');
+  const done = () => {
+    btn.textContent = 'Copied!'; btn.classList.add('copied');
+    overlay.classList.add('show');
+    setTimeout(() => {
+      btn.textContent = 'Copy'; btn.classList.remove('copied');
+      overlay.classList.remove('show');
+    }, 1300);
+  };
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(ta.value).then(done).catch(() => { ta.select(); document.execCommand('copy'); done(); });
   } else { ta.select(); document.execCommand('copy'); done(); }
